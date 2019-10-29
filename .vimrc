@@ -8,7 +8,6 @@ Plug 'ryanoasis/vim-devicons'
 Plug 'prabirshrestha/async.vim'
 Plug 'prabirshrestha/vim-lsp'
 Plug 'sheerun/vim-polyglot'
-Plug 'clausreinke/typescript-tools.vim', { 'do': 'npm install' }
 Plug 'prettier/vim-prettier', {
   \ 'do': 'npm install',
   \ 'for': ['javascript', 'typescript', 'css', 'less', 'scss', 'json', 'graphql', 'markdown', 'vue', 'yaml', 'html'] }
@@ -27,6 +26,7 @@ if executable('typescript-language-server')
         \ 'name': 'typescript-language-server',
         \ 'cmd': {server_info->[&shell, &shellcmdflag, 'typescript-language-server --stdio']},
         \ 'root_uri':{server_info->lsp#utils#path_to_uri(lsp#utils#find_nearest_parent_file_directory(lsp#utils#get_buffer_path(), 'tsconfig.json'))},
+    s:find_nearest_tsconfig_directory
         \ 'whitelist': ['typescript'],
         \ })
 endif
@@ -80,13 +80,12 @@ NeoBundle 'scrooloose/nerdcommenter'
 " \    },
 " \ }
 NeoBundle 'Shougo/vimproc'
-" 自動import
 NeoBundle 'Quramy/tsuquyomi'
 " 補完
 if has('lua')
   " コードの自動補完
   NeoBundle 'Shougo/neocomplete.vim'
-  NeoBundle 'Shougo/neocomplcache.vim'
+  " NeoBundle 'Shougo/neocomplcache.vim'
   " スニペットの補完機能
   NeoBundle "Shougo/neosnippet"
   " スニペット集
@@ -223,33 +222,29 @@ vmap gx <Plug>(openbrowser-search)
 "}}}
 
 " neocomplete {{{
-if neobundle#is_installed('neocomplete.vim')
-    " Vim起動時にneocompleteを有効にする
-    let g:neocomplete#enable_at_startup = 1
-    " smartcase有効化. 大文字が入力されるまで大文字小文字の区別を無視する
-    let g:neocomplete#enable_smart_case = 1
-    " 3文字以上の単語に対して補完を有効にする
-    let g:neocomplete#min_keyword_length = 3
-    " 区切り文字まで補完する
-    let g:neocomplete#enable_auto_delimiter = 1
-    " 1文字目の入力から補完のポップアップを表示
-    let g:neocomplete#auto_completion_start_length = 1
-    " バックスペースで補完のポップアップを閉じる
-    inoremap <expr><BS> neocomplete#smart_close_popup()."<C-h>"
+" Vim起動時にneocompleteを有効にする
+let g:neocomplete#enable_at_startup = 1
+" smartcase有効化. 大文字が入力されるまで大文字小文字の区別を無視する
+let g:neocomplete#enable_smart_case = 1
+" 3文字以上の単語に対して補完を有効にする
+let g:neocomplete#min_keyword_length = 3
+" 区切り文字まで補完する
+let g:neocomplete#enable_auto_delimiter = 1
+" 1文字目の入力から補完のポップアップを表示
+let g:neocomplete#auto_completion_start_length = 1
+" バックスペースで補完のポップアップを閉じる
+inoremap <expr><BS> neocomplete#smart_close_popup()."<C-h>"
 
-    " エンターキーで補完候補の確定. スニペットの展開もエンターキーで確定・・・・・・②
-    imap <expr><CR> neosnippet#expandable() ? "<Plug>(neosnippet_expand_or_jump)" : pumvisible() ? "<C-y>" : "<CR>"
-    " タブキーで補完候補の選択. スニペット内のジャンプもタブキーでジャンプ・・・・・・③
-    imap <expr><TAB> pumvisible() ? "<C-n>" : neosnippet#jumpable() ? "<Plug>(neosnippet_expand_or_jump)" : "<TAB>"
-endif
+" エンターキーで補完候補の確定. スニペットの展開もエンターキーで確定・・・・・・②
+imap <expr><CR> neosnippet#expandable() ? "<Plug>(neosnippet_expand_or_jump)" : pumvisible() ? "<C-y>" : "<CR>"
+" タブキーで補完候補の選択. スニペット内のジャンプもタブキーでジャンプ・・・・・・③
+imap <expr><TAB> pumvisible() ? "<C-n>" : neosnippet#jumpable() ? "<Plug>(neosnippet_expand_or_jump)" : "<TAB>"
 
 " neocompleteにominiの候補を表示する
-let g:neocomplete#enable_at_startup = 1
 if !exists('g:neocomplete#force_omni_input_patterns')
-    let g:neocomplete#force_omni_input_patterns = {}
+  let g:neocomplete#force_omni_input_patterns = {}
 endif
-" let g:neocomplete#force_omni_input_patterns.typescript = '[^. *\t]\.\w*\|\h\w*::'
-let g:neocomplete#force_omni_input_patterns.typescript = '[^. \t]\.\%(\h\w*\)\?'
+let g:neocomplete#force_omni_input_patterns.typescript = '[^. *\t]\.\w*\|\h\w*::'
 
 " 最初の補完候補を選択状態にする
 set completeopt+=noinsert
@@ -380,7 +375,8 @@ nnoremap x "_x
 noremap <S-h>   ^
 noremap <S-j>   L
 noremap <S-k>   H
-noremap <S-l>   $
+nnoremap <S-l>   $
+vnoremap <S-l>   $h
 map m  %
 nmap ; :
 nmap <C-k> <Plug>NERDCommenterToggle
