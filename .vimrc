@@ -7,13 +7,18 @@ call plug#begin('~/.vim/plugged')
 Plug 'ryanoasis/vim-devicons'
 Plug 'prabirshrestha/async.vim'
 Plug 'prabirshrestha/vim-lsp'
+Plug 'sheerun/vim-polyglot'
+Plug 'clausreinke/typescript-tools.vim', { 'do': 'npm install' }
 Plug 'prettier/vim-prettier', {
   \ 'do': 'npm install',
   \ 'for': ['javascript', 'typescript', 'css', 'less', 'scss', 'json', 'graphql', 'markdown', 'vue', 'yaml', 'html'] }
 call plug#end()
 
 " vim prettier設定
+" @formatアノテーションを持ったファイルの自動フォーマットを無効にする
 let g:prettier#autoformat = 0
+" Prettierのパースエラーをquickfixに表示しない
+let g:prettier#quickfix_enabled = 0
 autocmd BufWritePre *.js,*.jsx,*.mjs,*.ts,*.tsx,*.css,*.less,*.scss,*.json,*.graphql,*.md,*.vue,*.yaml,*.html PrettierAsync
 
 " TypeScriptのエラーチェックなどを送るサーバー
@@ -53,8 +58,6 @@ NeoBundleFetch 'Shougo/neobundle.vim'
 NeoBundle 'altercation/vim-colors-solarized'
 " paste時にインデント崩れるのを防ぐ
 NeoBundle 'ConradIrwin/vim-bracketed-paste'
-" ctrlp ファイル検索
-" NeoBundle "ctrlpvim/ctrlp.vim"
 " fzf
 NeoBundle 'junegunn/fzf', { 'dir': '~/.fzf', 'do': './install --all' }
 NeoBundle 'junegunn/fzf.vim', { 'depends': 'fzf' }
@@ -76,8 +79,9 @@ NeoBundle 'scrooloose/nerdcommenter'
 " \     'unix' : 'gmake',
 " \    },
 " \ }
-" vimprocがinstallできないので使えない
-" NeoBundle 'Shougo/vimshell.vim'
+NeoBundle 'Shougo/vimproc'
+" 自動import
+NeoBundle 'Quramy/tsuquyomi'
 " 補完
 if has('lua')
   " コードの自動補完
@@ -102,7 +106,7 @@ NeoBundle 'tyru/open-browser.vim'
 
 " 言語系 {{{
 " オールラウンダー(他の言語系のものがいらない可能性あり)
-NeoBundle 'sheerun/vim-polyglot'
+" NeoBundle 'sheerun/vim-polyglot'
 " firestoreのセキュリティルール
 NeoBundle 'delphinus/vim-firestore'
 " vueのeslintを効かせる
@@ -115,7 +119,20 @@ let g:syntastic_typescript_tsc_args = "--experimentalDecorators --target ES5"
 " }}}
 
 " nerdtree {{{
-nmap <silent><C-n> :NERDTreeToggle<CR>
+" nmap <silent><C-n> :NERDTreeToggle<CR>
+
+" 現在開いているファイルpathでnerdtreeを開く
+function! NerdTreeToggleFind()
+    if exists("g:NERDTree") && g:NERDTree.IsOpen()
+        NERDTreeClose
+    elseif filereadable(expand('%'))
+        NERDTreeFind
+    else
+        NERDTree
+    endif
+endfunction
+
+nnoremap <C-n> :call NerdTreeToggleFind()<CR>
 " }}}
 
 " ale {{{
@@ -183,6 +200,11 @@ function! NERDCommenter_after()
 endfunction
 " }}}
 
+" tsuquyomi設定
+" 保存時止まるのをなくすために、型チェックをoff
+let g:tsuquyomi_disable_quickfix = 1
+nnoremap <silent> <C-i> :TsuImport<CR>
+
 " airblade/vim-gitgutterの設定 {{{
 set updatetime=250
 " highlight GitGutterAdd ctermfg=lightgreen
@@ -220,9 +242,18 @@ if neobundle#is_installed('neocomplete.vim')
     " タブキーで補完候補の選択. スニペット内のジャンプもタブキーでジャンプ・・・・・・③
     imap <expr><TAB> pumvisible() ? "<C-n>" : neosnippet#jumpable() ? "<Plug>(neosnippet_expand_or_jump)" : "<TAB>"
 endif
+
+" neocompleteにominiの候補を表示する
+let g:neocomplete#enable_at_startup = 1
+if !exists('g:neocomplete#force_omni_input_patterns')
+    let g:neocomplete#force_omni_input_patterns = {}
+endif
+" let g:neocomplete#force_omni_input_patterns.typescript = '[^. *\t]\.\w*\|\h\w*::'
+let g:neocomplete#force_omni_input_patterns.typescript = '[^. \t]\.\%(\h\w*\)\?'
+
 " 最初の補完候補を選択状態にする
 set completeopt+=noinsert
-" }}}
+" " }}}
 
 " NERD Commenter でコメント後に空白を空ける
 let g:NERDSpaceDelims=1
@@ -357,8 +388,9 @@ vmap <C-k> <Plug>NERDCommenterToggle
 map! <C-V> <C-r>0
 
 syntax enable
-" let g:solarized_termcolors=256
-set background=light
+set background=dark
+" 背景がgrayになってしまう対応
+let g:solarized_termtrans = 1
 colorscheme solarized
 " 行を強調表示
 set cursorline
@@ -450,10 +482,10 @@ function! DeviconsColors(config)
 endfunction
 let g:devicons_colors = {
       \'normal': ['', '', '', '', ''],
-      \'emphasize': ['', '', '', '', '', '', '', '', '', '', ''],
-      \'yellow': ['', '', ''],
+      \'emphasize': ['', '', '', '', '', '', '', '', '', ''],
+      \'yellow': ['', '', '', ''],
       \'orange': ['', '', '', 'λ', '', ''],
-      \'red': ['', '', '', '', '', '', '', '', ''],
+      \'red': ['', '', '', '', '', '', '', '', '', ''],
       \'magenta': [''],
       \'violet': ['', '', '', ''],
       \'blue': ['', '', '', '', '', '', '', '', '', '', '', '', ''],
@@ -462,3 +494,5 @@ let g:devicons_colors = {
       \}
 call DeviconsColors(g:devicons_colors)
 
+" propetyなどで型などを詳細に表示できる
+let g:tsuquyomi_completion_detail = 1
