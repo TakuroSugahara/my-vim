@@ -8,9 +8,13 @@ Plug 'ryanoasis/vim-devicons'
 Plug 'prabirshrestha/async.vim'
 Plug 'prabirshrestha/vim-lsp'
 Plug 'sheerun/vim-polyglot'
+Plug 'christoomey/vim-tmux-navigator'
 Plug 'prettier/vim-prettier', {
   \ 'do': 'npm install',
   \ 'for': ['javascript', 'typescript', 'css', 'less', 'scss', 'json', 'graphql', 'markdown', 'vue', 'yaml', 'html'] }
+Plug 'vim-airline/vim-airline'
+Plug 'vim-airline/vim-airline-themes'
+" Plug 'ueokande/popupdict.vim'
 call plug#end()
 
 " vim prettier設定
@@ -50,12 +54,8 @@ if has('vim_starting')
     set runtimepath+=~/.vim/bundle/neobundle.vim/
 endif
 call neobundle#begin(expand('~/.vim/bundle'))
-let g:neobundle_default_git_protocol='https'
-
-" neobundle#begin
-NeoBundleFetch 'Shougo/neobundle.vim'
 " color theme solarized
-NeoBundle 'altercation/vim-colors-solarized'
+" NeoBundle 'altercation/vim-colors-solarized'
 " paste時にインデント崩れるのを防ぐ
 NeoBundle 'ConradIrwin/vim-bracketed-paste'
 " fzf
@@ -69,6 +69,9 @@ NeoBundle 'tpope/vim-fugitive'
 NeoBundle 'scrooloose/nerdtree'
 " コメントアウト機能
 NeoBundle 'scrooloose/nerdcommenter'
+" nerdtreeでのgitの状態表示
+NeoBundle 'scrooloose/nerdtree'
+NeoBundle 'Xuyuanp/nerdtree-git-plugin'
 " uniteなどの高速化（installできない）
 " NeoBundle 'Shougo/vimproc.vim', {
 " \ 'build' : {
@@ -79,7 +82,7 @@ NeoBundle 'scrooloose/nerdcommenter'
 " \     'unix' : 'gmake',
 " \    },
 " \ }
-NeoBundle 'Shougo/vimproc'
+" NeoBundle 'Shougo/vimproc.vim'
 NeoBundle 'Quramy/tsuquyomi'
 " 補完
 if has('lua')
@@ -140,6 +143,7 @@ let g:ale_linters = {
       \ 'html': [],
       \ 'css': ['stylelint'],
       \ 'javascript': ['eslint'],
+      \ 'typescript': ['eslint', 'tsserver'],
       \ 'vue': ['eslint']
       \ }
 let g:ale_linter_aliases = {'vue': 'css'}
@@ -203,6 +207,24 @@ endfunction
 " 保存時止まるのをなくすために、型チェックをoff
 let g:tsuquyomi_disable_quickfix = 1
 nnoremap <silent> <C-i> :TsuImport<CR>
+" preview非表示
+autocmd FileType typescript setlocal completeopt-=preview
+" tooltipの設定
+set ballooneval
+autocmd FileType typescript setlocal balloonexpr=tsuquyomi#balloonexpr()
+autocmd FileType typescript nmap <buffer> <Leader>t : <C-u>echo tsuquyomi#hint()<CR>
+" rename
+autocmd FileType typescript nmap <buffer> <Leader>e <Plug>(TsuquyomiRenameSymbol)
+
+" popup dictionary
+function ToggleDict()
+    if g:popupdict_enabled == 0
+        g:popupdict_enabled = 1
+    else
+        g:popupdict_enabled = 0
+    endif
+endfunction
+nmap <Leader>d ToggleDict()
 
 " airblade/vim-gitgutterの設定 {{{
 set updatetime=250
@@ -323,7 +345,7 @@ nmap O :<C-u>call append(expand('.'), '')<Cr>j
 set backspace=indent,eol,start
 
 set showmatch " 括弧の対応関係を一瞬表示する
-source $VIMRUNTIME/macros/matchit.vim " Vimの「%」を拡張する
+" source $VIMRUNTIME/macros/matchit.vim " Vimの「%」を拡張する
 
 "----------------------------------------------------------
 " マウスでカーソル移動とスクロール
@@ -368,10 +390,11 @@ autocmd QuickFixCmdPost vimgrep cwindow
 set clipboard+=unnamed
 
 " ショートカットキー
-nmap <space> :
+" leaderをspaceに割り当てる
+let mapleader = "\<Space>"
 nmap / /\v
 nmap f *
-nnoremap x "_x
+" nnoremap x "_x
 noremap <S-h>   ^
 noremap <S-j>   L
 noremap <S-k>   H
@@ -383,11 +406,14 @@ nmap <C-k> <Plug>NERDCommenterToggle
 vmap <C-k> <Plug>NERDCommenterToggle
 map! <C-V> <C-r>0
 
-syntax enable
-set background=dark
+" omni補完呼び出し
+imap <C-o> <C-x><C-o>
+
+set syntax=enable
 " 背景がgrayになってしまう対応
 let g:solarized_termtrans = 1
 colorscheme solarized
+set background=dark
 " 行を強調表示
 set cursorline
 
@@ -492,3 +518,53 @@ call DeviconsColors(g:devicons_colors)
 
 " propetyなどで型などを詳細に表示できる
 let g:tsuquyomi_completion_detail = 1
+
+" <C-w> 系を Vim Tmux Navigator に移譲する
+let g:tmux_navigator_no_mappings = 1
+nnoremap <silent> <C-w>h :TmuxNavigateLeft<cr>
+nnoremap <silent> <C-w>j :TmuxNavigateDown<cr>
+nnoremap <silent> <C-w>k :TmuxNavigateUp<cr>
+nnoremap <silent> <C-w>l :TmuxNavigateRight<cr>
+nnoremap <silent> <C-w>\\ :TmuxNavigatePrevious<cr>
+
+" Powerline
+" Powerline系フォントを利用する
+set laststatus=2
+let g:airline_powerline_fonts = 1
+let g:airline#extensions#tabline#enabled = 1
+let g:airline#extensions#tabline#buffer_idx_mode = 1
+let g:airline#extensions#whitespace#mixed_indent_algo = 1
+let g:airline_theme = 'tomorrow'
+if !exists('g:airline_symbols')
+  let g:airline_symbols = {}
+endif
+
+" unicode symbols
+let g:airline_left_sep = '»'
+let g:airline_left_sep = '▶'
+let g:airline_right_sep = '«'
+let g:airline_right_sep = '◀'
+let g:airline_symbols.crypt = '🔒'
+let g:airline_symbols.linenr = '☰'
+let g:airline_symbols.linenr = '␊'
+let g:airline_symbols.linenr = '␤'
+let g:airline_symbols.linenr = '¶'
+let g:airline_symbols.maxlinenr = ''
+let g:airline_symbols.maxlinenr = '㏑'
+let g:airline_symbols.branch = '⎇'
+let g:airline_symbols.paste = 'ρ'
+let g:airline_symbols.paste = 'Þ'
+let g:airline_symbols.paste = '∥'
+let g:airline_symbols.spell = 'Ꞩ'
+let g:airline_symbols.notexists = '∄'
+let g:airline_symbols.whitespace = 'Ξ'
+
+" powerline symbols
+let g:airline_left_sep = ''
+let g:airline_left_alt_sep = ''
+let g:airline_right_sep = ''
+let g:airline_right_alt_sep = ''
+let g:airline_symbols.branch = ''
+let g:airline_symbols.readonly = ''
+let g:airline_symbols.linenr = '☰'
+let g:airline_symbols.maxlinenr = ''
